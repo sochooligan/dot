@@ -2,6 +2,8 @@
 
 ;; 包管理已在 early-init.el 中初始化
 (require 'use-package)
+(require 'mwheel)       ;; mouse-wheel-scroll-amount 等滚轮选项
+(require 'cc-vars)      ;; c-default-style / c-basic-offset
 
 (global-display-line-numbers-mode t)  ;; 全局开启行号
 (column-number-mode t)		      ;; 显示列号
@@ -19,6 +21,9 @@
 ;; 更好的 buffer 列表
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
+;; F5 编译当前文件
+(global-set-key (kbd "<f5>") 'byte-compile-file)
+
 ;; 关闭当前缓冲区时，不询问直接关闭当前文件；
 (global-set-key (kbd "C-x k")
 		(lambda () (interactive)
@@ -29,15 +34,61 @@
 (setq auto-save-default t) ;; recover-this-file 选中#文件，来恢复
 (setq make-backup-files t) ;; 生成备份文件（~文件）
 
+;; C-n/C-p 用 vertical-motion：跳过 next-line 的 goal-column 簿记，纯屏幕行移动
+;; vertical-motion 到边界不报错，这里手动补回 next-line 的边界 ding（报错声）
+;; 按住 C-n/C-p 时按键连发，连按 my-repeat-upgrade-at 次后升级：
+;; 移动从 1 行变为 2 行，封顶 2 行（只有 1、2 两档）
+(defvar my-repeat-timeout 0.5
+  "两次按键间隔小于该秒数视为连续重复。")
+(defvar my-repeat-count 0
+  "本次连续按键的次数。")
+(defvar my-repeat-last-time nil)
+(defvar my-repeat-upgrade-at 4
+  "连续按下几次后从 1 行升级为 2 行。")
+(defun my-repeat-factor ()
+  "返回本次按键应移动的行数：1 或 2（连按满 my-repeat-upgrade-at 次后为 2）。"
+  (let* ((now (float-time))
+         (repeating (and (eq last-command this-command)
+                         (memq last-command
+                               '(my-next-screen-line my-previous-screen-line))
+                         my-repeat-last-time
+                         (< (- now my-repeat-last-time) my-repeat-timeout))))
+    (if repeating
+        (setq my-repeat-count (1+ my-repeat-count))
+      (setq my-repeat-count 0))
+    (setq my-repeat-last-time now)
+    (if (>= my-repeat-count my-repeat-upgrade-at) 2 1)))
+(defun my-next-screen-line (arg)
+  (interactive "p")
+  (let* ((n (* arg (my-repeat-factor)))
+         (moved (vertical-motion n)))
+    (when (< (abs moved) n)
+      (ding))))
+(defun my-previous-screen-line (arg)
+  (interactive "p")
+  (let* ((n (* arg (my-repeat-factor)))
+         (moved (vertical-motion (- n))))
+    (when (< (abs moved) n)
+      (ding))))
+(global-set-key (kbd "C-n") #'my-next-screen-line)
+(global-set-key (kbd "C-p") #'my-previous-screen-line)
+
+(xterm-mouse-mode 1)                      ; 让终端把触控板滚动上报给 Emacs
+(setq mouse-wheel-scroll-amount
+      '(1 ((shift) . 1) ((control) . nil))) ; 每个格滚 1 行，甩动时终端自然连发多格 → 观感连续
+;; 滚轮到顶/底保持 mwheel 默认：只显示消息、不响铃
+
 ;; eshell 提示符使用短路径
 ;; 只显示当前目录的末级名称，例如在 /home/jz/docs 下显示：docs $
 ;; 实现：用 file-name-nondirectory 取路径最后一段
-(setq eshell-prompt-function
-      (lambda()
-	(concat (file-name-nondirectory
-		 (directory-file-name
-		  (expand-file-name default-directory)))
-		" $ ")))
+(with-eval-after-load "em-prompt"
+  (with-no-warnings
+    (setq eshell-prompt-function
+          (lambda ()
+            (concat (file-name-nondirectory
+                     (directory-file-name
+                      (expand-file-name default-directory)))
+                    " $ ")))))
 
 
 ;; c/c++mode 选择对齐风格（gnu/k&r/bsd/stroustrup/linux/java/user）
@@ -132,8 +183,8 @@
 (use-package treemacs
   :commands (treemacs treemacs-add-and-display-current-project)
   :bind (("<f9>" . treemacs-add-and-display-current-project))
+  :custom (treemacs-tag-follow-delay 0.3)
   :config
-  (setq treemacs-tag-follow-delay 0.3)
   ;; tag-follow-mode 激活时会自动禁用 follow-mode，
   ;; 通过 hook 在激活后重新开启，让两者共存：源码跟 tag，dired 跟目录
   (add-hook 'treemacs-tag-follow-mode-hook #'my-treemacs-follow-mode-with-tag)
