@@ -4,5 +4,11 @@ recentf
 *.bak
 *~
 *#
+
 *.elc
 eshell/
+emacs.d/elpa/archives
+emacs.d/elpa/gnupg
+emacs.d/.cache
+emacs.d/eln-cache
+
