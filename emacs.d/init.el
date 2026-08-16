@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 
 (global-display-line-numbers-mode t)  ;; 全局开启行号
 (column-number-mode t)		      ;; 显示列号
@@ -40,3 +41,7 @@
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
 ;;(add-hook 'text-mode-hook 'visual-line-mode)
 (setq-default fill-column 80)
+
+
+;; M-x byte-compile-file
+;; emacs --batch -f batch-byte-compile ~/.emacs.d/init.el
