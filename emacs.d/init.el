@@ -7,7 +7,7 @@
 
 (global-display-line-numbers-mode t)  ;; 全局开启行号
 (column-number-mode t)		      ;; 显示列号
-(global-hl-line-mode t)               ;; 高亮当前行
+;; (global-hl-line-mode t)               ;; 高亮当前行
 
 (setq scroll-step 1)  ;; 滚动时一次只移动一行，而不是一次跳过整屏
 
@@ -73,6 +73,14 @@
       (ding))))
 (global-set-key (kbd "C-n") #'my-next-screen-line)
 (global-set-key (kbd "C-p") #'my-previous-screen-line)
+;; dired 中 C-n/C-p 用默认的 dired-next-line/dired-previous-line，
+;; 光标移动到文件名处而不是行首（vertical-motion 会把光标放到列 0）
+(declare-function dired-next-line "dired" (&optional arg) t)
+(declare-function dired-previous-line "dired" (&optional arg) t)
+(add-hook 'dired-mode-hook
+          (lambda ()
+            (local-set-key (kbd "C-n") #'dired-next-line)
+            (local-set-key (kbd "C-p") #'dired-previous-line)))
 
 (xterm-mouse-mode 1)                      ; 让终端把触控板滚动上报给 Emacs
 (setq mouse-wheel-scroll-amount
