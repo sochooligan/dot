@@ -28,7 +28,7 @@
 (global-set-key (kbd "C-x k")
 		(lambda () (interactive)
 		  (let ((kill-buffer-query-functions nil)
-			(kill-buffer-kill-buffer-hook nil)) ;; 禁用kill hook
+			(kill-buffer-hook nil)) ;; 禁用kill hook
 		    (kill-current-buffer))))
 
 ;; 未保存关闭缓冲区时，生成 #文件，自动保存临时文件
