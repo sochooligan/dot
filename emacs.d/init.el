@@ -145,6 +145,70 @@
 (dolist (key '([mouse-4] [mouse-5] [wheel-up] [wheel-down]))
   (global-set-key key #'my-wheel-scroll))
 
+;; ---- 系统剪贴板同步（emacs-nw 专用）----
+;; 根因：xterm-mouse-mode 接管了鼠标拖选，终端原生选区失效（鼠标选中→终端
+;; 复制取到空选区）；且终端 Emacs 没有系统剪贴板，M-w 只进 kill-ring，粘不到
+;; Emacs 之外。
+;; 解法：M-w/剪切/删除（都经过 kill-new/kill-append）时，advice 把当前 kill-ring
+;; 头部同步进系统剪贴板（xclip 为主，Wayland 下 wl-copy 兜底）；C-S-v 反向把
+;; 系统剪贴板内容粘贴进 Emacs。
+;; 想保留终端原生鼠标选区复制时，拖动中按住 Shift 即可绕过 xterm-mouse-mode。
+(defvar my-clipboard-tool-name nil
+  "探测到的剪贴板工具名（\"xclip\"/\"wl-copy\"），nil 表示不可用。")
+
+(defun my-clipboard-tool ()
+  "返回可用的剪贴板工具名：xclip 优先，Wayland 下 wl-copy 兜底。"
+  (or my-clipboard-tool-name
+      (setq my-clipboard-tool-name
+            (cond ((executable-find "xclip") "xclip")
+                  ((executable-find "wl-copy") "wl-copy")))))
+
+(declare-function string-remove-suffix "subr" (string suffix) t)
+
+(defun my-clipboard-copy (text)
+  "把 TEXT 写入系统剪贴板；工具不可用或 TEXT 为空时静默跳过。"
+  (let ((tool (my-clipboard-tool)))
+    (when (and tool (> (length text) 0))
+      (let* ((args (if (equal tool "xclip") '("-selection" "clipboard") nil))
+             (proc (apply #'start-process "my-clip-copy" nil tool args)))
+        ;; 剪贴板进程须存活才能持有选区（xclip/wl-copy 均如此）
+        (set-process-coding-system proc 'utf-8 'utf-8)
+        (process-send-string proc text)
+        (process-send-eof proc)))))
+
+(defun my-clipboard-get ()
+  "从系统剪贴板读取文本；工具不可用、读取失败或内容为空时返回 nil。"
+  (let* ((tool (my-clipboard-tool))
+         (cmd (and tool (if (equal tool "xclip") "xclip" "wl-paste")))
+         (args (if (equal cmd "xclip") '("-selection" "clipboard" "-o") nil)))
+    (when (and cmd (executable-find cmd))
+      (condition-case nil
+          (with-temp-buffer
+            (let ((status (apply #'call-process cmd nil t nil args)))
+              (when (and (integerp status) (zerop status))
+                (let ((s (buffer-string)))
+                  (and (> (length s) 0)
+                       (string-remove-suffix "\n" s))))))
+        (error nil)))))
+
+(defun my-sync-system-clipboard (&rest _)
+  "把当前 kill-ring 头部内容同步到系统剪贴板。"
+  (when kill-ring
+    (my-clipboard-copy (car kill-ring))))
+
+(advice-add 'kill-new :after #'my-sync-system-clipboard)
+(advice-add 'kill-append :after #'my-sync-system-clipboard)
+
+(defun my-clipboard-paste ()
+  "从系统剪贴板读取文本并插入光标处。"
+  (interactive)
+  (let ((text (my-clipboard-get)))
+    (if text
+        (insert text)
+      (user-error "系统剪贴板不可用或为空（需要 xclip 或 wl-copy/wl-paste）"))))
+
+(global-set-key (kbd "C-S-v") #'my-clipboard-paste)
+
 ;; eshell 提示符使用短路径
 ;; 只显示当前目录的末级名称，例如在 /home/jz/docs 下显示：docs $
 ;; 实现：用 file-name-nondirectory 取路径最后一段
