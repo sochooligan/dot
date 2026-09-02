@@ -128,10 +128,10 @@
          (has-mod (assoc mods mouse-wheel-scroll-amount)))
     (if has-mod
         (mwheel-scroll event arg)
-      (let* ((button (event-basic-type event))
-             ;; Emacs 30：mouse-wheel-buttons 为按钮号→事件 的 alist，
-             ;; wheel-down/按钮 5 表示向下滚动（与下方绑定 mouse-5/wheel-down 对应）
-             (dir (if (memq button '(mouse-5 wheel-down)) 'down 'up))
+      (let* ((button (mwheel-event-button event))
+             (dir (if (memq button (list mouse-wheel-down-event
+                                         mouse-wheel-down-alternate-event))
+                      'down 'up))
              (amt (my-wheel-factor dir))
              ;; 临时让 mwheel-scroll 用加速后的行数，shift/control 等分支不动
              (mouse-wheel-scroll-amount
