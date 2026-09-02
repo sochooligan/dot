@@ -87,64 +87,6 @@
       '(1 ((shift) . 1) ((control) . nil))) ; 每个格滚 1 行，甩动时终端自然连发多格 → 观感连续
 ;; 滚轮到顶/底保持 mwheel 默认：只显示消息、不响铃
 
-;; 鼠标滚轮加速：无修饰键时按滚动速度自动加速
-;; 终端里 mwheel 自带的渐进加速靠 event-click-count，滚轮事件恒为 1 不生效；
-;; 这里按事件间隔自己判断：方向一致且间隔 < my-wheel-timeout 视为快速连滚，逐次加速。
-;; 慢速滚动仍是 1 行/格（触摸板精细滚动不受影响），快拨滚轮/快甩触摸板时越滚越快。
-(defvar my-wheel-timeout 0.3
-  "两次滚轮事件间隔小于该秒数视为连续快速滚动，累计加速。")
-(defvar my-wheel-count 0
-  "当前连续快速滚动的次数（方向一致且间隔小于 my-wheel-timeout）。")
-(defvar my-wheel-last-time nil
-  "上次滚轮事件的时间戳（float-time）。")
-(defvar my-wheel-last-dir nil
-  "上次滚轮的方向：`up' 或 `down'。")
-(defvar my-wheel-accel-after 3
-  "连续滚动几次后开始加速。")
-(defvar my-wheel-accel-step 1
-  "每多连续 my-wheel-accel-after 次，单次多滚的行数。")
-(defvar my-wheel-accel-max 5
-  "单个滚轮事件最多滚动的行数。")
-
-(defun my-wheel-factor (dir)
-  "返回本次滚轮事件应滚动的行数，DIR 为 `up' 或 `down'。"
-  (let* ((now (float-time))
-         (repeating (and (eq my-wheel-last-dir dir)
-                         my-wheel-last-time
-                         (< (- now my-wheel-last-time) my-wheel-timeout))))
-    (if repeating
-        (setq my-wheel-count (1+ my-wheel-count))
-      (setq my-wheel-count 0))
-    (setq my-wheel-last-time now)
-    (setq my-wheel-last-dir dir)
-    (min (+ 1 (* my-wheel-accel-step
-                 (floor my-wheel-count my-wheel-accel-after)))
-         my-wheel-accel-max)))
-
-(defun my-wheel-scroll (event &optional arg)
-  "滚轮滚动：无修饰键时按滚动速度加速，带修饰键时交给 mwheel-scroll。"
-  (interactive (list last-input-event current-prefix-arg))
-  (let* ((mods (delq 'click (delq 'double (delq 'triple (event-modifiers event)))))
-         (has-mod (assoc mods mouse-wheel-scroll-amount)))
-    (if has-mod
-        (mwheel-scroll event arg)
-      (let* ((button (mwheel-event-button event))
-             (dir (if (memq button (list mouse-wheel-down-event
-                                         mouse-wheel-down-alternate-event))
-                      'down 'up))
-             (amt (my-wheel-factor dir))
-             ;; 临时让 mwheel-scroll 用加速后的行数，shift/control 等分支不动
-             (mouse-wheel-scroll-amount
-              (cons amt (cdr mouse-wheel-scroll-amount)))
-             ;; 禁用 mwheel 自带的 click-count 渐进加速，避免双重加速
-             (mouse-wheel-progressive-speed nil))
-        (mwheel-scroll event arg)))))
-(put 'my-wheel-scroll 'scroll-command t)
-
-;; 覆盖 mwheel 对 mouse-4/5（终端滚轮）与 wheel-up/down 的默认绑定
-(dolist (key '([mouse-4] [mouse-5] [wheel-up] [wheel-down]))
-  (global-set-key key #'my-wheel-scroll))
-
 ;; eshell 提示符使用短路径
 ;; 只显示当前目录的末级名称，例如在 /home/jz/docs 下显示：docs $
 ;; 实现：用 file-name-nondirectory 取路径最后一段
@@ -267,7 +209,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages '(markdown-preview-mode treemacs)))
+ '(package-selected-packages '(treemacs)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
