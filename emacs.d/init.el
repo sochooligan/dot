@@ -195,10 +195,6 @@
 ;;(add-hook 'text-mode-hook 'visual-line-mode)
 (setq-default fill-column 80)
 
-(use-package markdown-mode
-  :ensure t
-  :config
-  (setq markdown-command "/usr/bin/pandoc"))
 
 ;; treemacs 文件树
 (declare-function treemacs-tag-follow-mode "treemacs-tag-follow-mode" (&optional arg) t)
