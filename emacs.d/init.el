@@ -37,6 +37,9 @@
 ;; eshell 提示符使用短路径
 ;; 只显示当前目录的末级名称，例如在 /home/jz/docs 下显示：docs $
 ;; 实现：用 file-name-nondirectory 取路径最后一段
+;; eshell-prompt-function 定义于 em-prompt.el（eshell 启动时才加载），
+;; 编译 init.el 时未知，先声明以消除 byte-compile 的 free-variable 警告。
+(defvar eshell-prompt-function)
 (setq eshell-prompt-function
       (lambda()
 	(concat (file-name-nondirectory
