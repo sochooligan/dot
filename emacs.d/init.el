@@ -145,6 +145,9 @@
   ;; 通过 hook 在激活后重新开启，让两者共存：源码跟 tag，dired 跟目录
   (add-hook 'treemacs-tag-follow-mode-hook #'my-treemacs-follow-mode-with-tag)
   (treemacs-tag-follow-mode +1)
+  ;; 在树内移动时自动在相邻窗口预览文件内容
+  (require 'treemacs-peek-mode)
+  (treemacs-peek-mode +1)
   ;; dired 场景下 follow 落到目录节点时只高亮不展开，
   ;; 展开它让边栏与 dired 文件列表同步（须在包加载后 advice）
   (advice-add 'treemacs--follow :after #'my-treemacs-follow-dired-file))
