@@ -138,7 +138,8 @@
 (add-hook 'post-command-hook #'my-treemacs-dired-maybe-follow)
 (use-package treemacs
   :commands (treemacs treemacs-add-and-display-current-project)
-  :bind (("<f9>" . treemacs-add-and-display-current-project))
+  :bind (("<f11>" . treemacs-add-and-display-current-project))
+  :bind (("<f9>" . treemacs))
   :config
   (setq treemacs-tag-follow-delay 0.3)
   ;; tag-follow-mode 激活时会自动禁用 follow-mode，
@@ -147,6 +148,7 @@
   (treemacs-tag-follow-mode +1)
   ;; 在树内移动时自动在相邻窗口预览文件内容
   (require 'treemacs-peek-mode)
+  (declare-function treemacs-peek-mode "treemacs-peek-mode" (&optional arg))
   (treemacs-peek-mode +1)
   ;; dired 场景下 follow 落到目录节点时只高亮不展开，
   ;; 展开它让边栏与 dired 文件列表同步（须在包加载后 advice）
