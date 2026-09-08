@@ -149,6 +149,16 @@
   ;; 在树内移动时自动在相邻窗口预览文件内容
   (require 'treemacs-peek-mode)
   (declare-function treemacs-peek-mode "treemacs-peek-mode" (&optional arg))
+
+  ;; peek 只预览文件；目录节点不弹 dired，避免出现与 tree 不同的排序
+  (defun my-treemacs-do-peek-only-files (orig)
+    (let* ((btn (treemacs-current-button))
+           (path (and btn (treemacs-button-get btn :path))))
+      (unless (and path (stringp path) (file-directory-p path))
+        (funcall orig))))
+  (declare-function my-treemacs-do-peek-only-files nil t)
+  (advice-add 'treemacs--do-peek :around #'my-treemacs-do-peek-only-files)
+
   (treemacs-peek-mode +1)
   ;; dired 场景下 follow 落到目录节点时只高亮不展开，
   ;; 展开它让边栏与 dired 文件列表同步（须在包加载后 advice）
