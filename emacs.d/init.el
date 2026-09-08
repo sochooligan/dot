@@ -138,7 +138,7 @@
 (add-hook 'post-command-hook #'my-treemacs-dired-maybe-follow)
 (use-package treemacs
   :commands (treemacs treemacs-add-and-display-current-project)
-;;  :bind (("<f11>" . treemacs-add-and-display-current-project))
+  :bind (("<f12>" . treemacs-add-and-display-current-project))
   :bind (("<f9>" . treemacs))
   :config
   (setq treemacs-tag-follow-delay 0.3)
